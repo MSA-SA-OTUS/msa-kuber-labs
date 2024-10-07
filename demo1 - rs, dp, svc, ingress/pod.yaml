@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-kuber
+  namespace: test
+spec:
+  containers:
+  - name: app
+    image: roflmaoinmysoul/otus:v2.0
+        
