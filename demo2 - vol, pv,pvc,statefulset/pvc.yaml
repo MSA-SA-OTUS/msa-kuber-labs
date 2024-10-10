@@ -1,0 +1,11 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: kuber-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ''
+  resources:
+    requests:
+      storage: 1Gi

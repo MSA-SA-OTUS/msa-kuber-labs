@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuber-dp
+  labels:
+    app: kuber-dp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      env: prod
+  template:
+    metadata:
+      labels:
+        env: prod
+    spec:
+      containers:
+      - name: kuber-app-1
+        image: roflmaoinmysoul/otus:v2.0
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - mountPath: /cache
+          name: cache-volume
+      volumes:
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: kuber-pvc

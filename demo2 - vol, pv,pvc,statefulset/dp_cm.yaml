@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuber-dp
+  labels:
+    app: kuber-dp
+spec:
+  replicas: 2
+  minReadySeconds: 10
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      env: prod
+  template:
+    metadata:
+      labels:
+        env: prod
+    spec:
+      containers:
+      - name: kuber-app2
+        image: roflmaoinmysoul/otus:v0.1
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_USR
+          valueFrom:
+            configMapKeyRef:
+              name: kuber-cm
+              key: dbconfig
+        - name: DB_PASS
+          valueFrom:
+            configMapKeyRef:
+              name: kuber-cm
+              key: dbpass
+        volumeMounts:
+        - name: config
+          mountPath: "/config"
+          readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: kuber-cm
+            items:
+            - key: "dbpass"
+              path: "dbconfig"                    
