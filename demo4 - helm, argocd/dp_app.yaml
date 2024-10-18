@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kuber-dp
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: otus
+  source:
+    repoURL: https://github.com/MSA-SA-OTUS/msa-kuber-labs.git
+    targetRevision: main
+    path: "demo4 - helm, argocd/argo_app_dp"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kuber
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
