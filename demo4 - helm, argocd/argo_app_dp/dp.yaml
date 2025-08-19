@@ -5,7 +5,7 @@ metadata:
   labels:
     app: kuber-dp
 spec:
-  replicas: 3
+  replicas: 5
   minReadySeconds: 10
   strategy:
     rollingUpdate:
