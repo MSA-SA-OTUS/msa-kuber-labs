@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: basic-job
+  namespace: default
+spec:
+  completions: 1
+  parallelism: 1
+  # Время жизни Job после завершения (в секундах)
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: basic-job
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: basic-container
+        image: busybox:1.35
+        command: ["/bin/sh"]
+        args: ["-c", "echo 'Hello from Kubernetes Job!' && sleep 10 && echo 'Job completed successfully'"]
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"

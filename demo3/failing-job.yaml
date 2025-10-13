@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: failing-job
+  namespace: default
+spec:
+  completions: 1
+  parallelism: 1
+  ttlSecondsAfterFinished: 30
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: failing-job
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: failing-container
+        image: busybox:1.35
+        command: ["/bin/sh"]
+        args: 
+          - "-c"
+          - |
+            echo "Attempting to run failing job..."
+            echo "This job will fail intentionally"
+            sleep 5
+            echo "Exiting with error code 1"
+            exit 1
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
