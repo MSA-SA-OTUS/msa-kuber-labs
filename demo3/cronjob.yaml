@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scheduled-job-30sec
+  namespace: default
+spec:
+  # Расписание в формате cron
+  schedule: "*/1 * * * *"
+  # Количество неудачных запусков перед приостановкой
+  failedJobsHistoryLimit: 3
+  # Количество успешных запусков для хранения в истории
+  successfulJobsHistoryLimit: 3
+  # Приостановить CronJob
+  suspend: false
+  # Шаблон для создания Job'ов
+  jobTemplate:
+    spec:
+      # Время жизни Job после завершения (в секундах)
+      ttlSecondsAfterFinished: 60
+      # Шаблон для создания Pod'ов
+      template:
+        metadata:
+          labels:
+            app: scheduled-job-30sec
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: scheduled-container
+            image: busybox:1.35
+            command: ["/bin/sh"]
+            args: 
+              - "-c"
+              - |
+                echo "Scheduled task started at $(date)"
+                echo "Performing maintenance tasks..."
+                sleep 10
+                echo "Scheduled task completed at $(date)"
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "100m"
+              limits:
+                memory: "128Mi"
+                cpu: "200m"

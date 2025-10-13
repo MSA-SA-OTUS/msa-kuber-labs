@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: failing-job-restart
+  namespace: default
+spec:
+  completions: 1
+  parallelism: 1
+  # Время жизни Job после завершения (в секундах)
+  ttlSecondsAfterFinished: 30
+  # Количество повторных попыток при сбое
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: failing-job-restart
+    spec:
+      # Перезапуск контейнера внутри Pod'а при сбое
+      restartPolicy: OnFailure
+      containers:
+      - name: failing-container
+        image: busybox:1.35
+        command: ["/bin/sh"]
+        args: 
+          - "-c"
+          - |
+            echo "Attempting to run failing job (restart policy: OnFailure)..."
+            echo "This job will fail intentionally"
+            sleep 5
+            echo "Exiting with error code 1"
+            exit 1
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"

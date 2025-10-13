@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: parallel-job
+  namespace: default
+spec:
+  # Количество успешных завершений для завершения Job
+  completions: 5
+  # Количество параллельных Pod'ов
+  parallelism: 3
+  # Время жизни Job после завершения (в секундах)
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      labels:
+        app: parallel-job
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: parallel-container
+        image: busybox:1.35
+        command: ["/bin/sh"]
+        args: 
+          - "-c"
+          - |
+            echo "Starting parallel task $HOSTNAME"
+            sleep $((RANDOM % 30 + 10))
+            echo "Task $HOSTNAME completed successfully"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
