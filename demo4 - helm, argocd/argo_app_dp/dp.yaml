@@ -22,6 +22,6 @@ spec:
     spec:
       containers:
       - name: kuber-app
-        image: roflmaoinmysoul/otus:v2.0
+        image: roflmaoinmysoul/otus:v1.0
         ports:
         - containerPort: 8000      
