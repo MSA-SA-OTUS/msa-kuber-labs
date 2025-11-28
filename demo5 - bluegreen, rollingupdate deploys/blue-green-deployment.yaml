@@ -1,0 +1,202 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-blue
+  namespace: default
+  labels:
+    app: blue-green-demo
+    version: blue
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: blue-green-demo
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: blue-green-demo
+        version: blue
+    spec:
+      containers:
+        - name: app-container
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          # Проверка готовности - критична для Blue/Green
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          # Проверка жизнеспособности
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  namespace: default
+  labels:
+    app: blue-green-demo
+    version: green
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: blue-green-demo
+      version: green
+  template:
+    metadata:
+      labels:
+        app: blue-green-demo
+        version: green
+    spec:
+      containers:
+        - name: app-container
+          image: nginx:1.22
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          # Проверка готовности - критична для Blue/Green
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          # Проверка жизнеспособности
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blue-green-service
+  namespace: default
+  labels:
+    app: blue-green-demo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  # ВАЖНО: Service указывает на Blue версию (активная)
+  # Для переключения на Green измените selector на version: green
+  selector:
+    app: blue-green-demo
+    version: green
+---
+# ============================================================================
+# ИНСТРУКЦИЯ ПО ИСПОЛЬЗОВАНИЮ BLUE/GREEN ДЕПЛОЯ
+# ============================================================================
+#
+# Blue/Green стратегия деплоя:
+# 1. Два идентичных окружения (Blue и Green) работают параллельно
+# 2. Одно окружение активно и получает весь трафик
+# 3. Другое окружение простаивает, готовое к переключению
+# 4. Новую версию деплоят в неактивное окружение
+# 5. После тестирования трафик переключается на новое окружение
+# 6. Старое окружение остается для быстрого отката при необходимости
+#
+# ПРЕИМУЩЕСТВА:
+# - Мгновенное переключение трафика (без downtime)
+# - Быстрый откат (просто переключить Service обратно)
+# - Возможность тестирования новой версии перед переключением
+#
+# НЕДОСТАТКИ:
+# - Требует двойных ресурсов (два полных окружения)
+#
+# ПРОЦЕСС ДЕПЛОЯ:
+#
+# ШАГ 1: Развертывание начального состояния (Blue активен)
+#   kubectl apply -f blue-green-deployment.yaml
+#
+# ШАГ 2: Проверка состояния
+#   kubectl get deployments
+#   kubectl get pods -l app=blue-green-demo
+#   kubectl get svc blue-green-service
+#
+# ШАГ 3: Обновление Green окружения (новая версия)
+#   kubectl set image deployment/app-green app-container=nginx:1.23
+#   # или отредактируйте файл и примените:
+#   kubectl apply -f blue-green-deployment.yaml
+#
+# ШАГ 4: Тестирование Green окружения (до переключения трафика)
+#   # Создайте временный Service для тестирования Green:
+#   kubectl port-forward deployment/app-green 8080:80
+#   # Протестируйте на localhost:8080
+#
+# ШАГ 5: Переключение трафика на Green
+#   kubectl patch service blue-green-service -p '{"spec":{"selector":{"version":"green"}}}'
+#   # или отредактируйте Service и измените selector на version: green
+#
+# ШАГ 6: Мониторинг после переключения
+#   kubectl get pods -l app=blue-green-demo
+#   kubectl logs -l app=blue-green-demo,version=green
+#
+# ШАГ 7 (опционально): Откат на Blue при проблемах
+#   kubectl patch service blue-green-service -p '{"spec":{"selector":{"version":"blue"}}}'
+#
+# ШАГ 8 (опционально): Удаление старого окружения после успешного деплоя
+#   kubectl delete deployment app-blue
+#   # Или оставьте для быстрого отката
+#
+# ПРИМЕРЫ КОМАНД:
+#
+# Проверка текущего активного окружения:
+#   kubectl get endpoints blue-green-service
+#
+# Просмотр логов активного окружения:
+#   kubectl logs -l app=blue-green-demo,version=blue
+#
+# Масштабирование Green перед переключением:
+#   kubectl scale deployment app-green --replicas=5
+#
+# Переключение через kubectl edit:
+#   kubectl edit service blue-green-service
+#   # Измените selector.version с "blue" на "green"
+#
+# ============================================================================
+

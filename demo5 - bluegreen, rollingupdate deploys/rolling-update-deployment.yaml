@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rolling-update-demo
+  namespace: default
+  labels:
+    app: rolling-update-demo
+spec:
+  # Количество реплик
+  replicas: 3
+  # Стратегия обновления
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Максимальное количество дополнительных подов, которые могут быть созданы во время обновления
+      # Может быть числом или процентом (например, "50%" или 1)
+      maxSurge: 1
+      # Максимальное количество подов, которые могут быть недоступны во время обновления
+      # Может быть числом или процентом (например, "25%" или 1)
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: rolling-update-demo
+  template:
+    metadata:
+      labels:
+        app: rolling-update-demo
+        version: v1.0.0
+    spec:
+      containers:
+        - name: app-container
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+# Пример обновления: Deployment с новой версией образа
+# Для применения обновления используйте:
+# kubectl set image deployment/rolling-update-demo app-container=nginx:1.22
+# или
+# kubectl apply -f deployment-rolling-update.yaml (после изменения версии образа)
+#
+# Процесс Rolling Update:
+# 1. Создается новый Pod с новым образом (maxSurge позволяет создать дополнительный Pod)
+# 2. Новый Pod проходит readinessProbe
+# 3. Трафик переключается на новый Pod
+# 4. Старый Pod удаляется
+# 5. Процесс повторяется для остальных Pod'ов
+#
+# Параметры стратегии:
+# - maxSurge: 1 - во время обновления может быть максимум 4 Pod'а (3 текущих + 1 новый)
+# - maxUnavailable: 0 - гарантирует, что всегда будет доступно минимум 3 Pod'а
+#
+# Альтернативные значения:
+# - maxSurge: "50%" - может создать до 50% дополнительных подов (1-2 дополнительных)
+# - maxUnavailable: "25%" - может быть недоступно до 25% подов (1 под)
+
