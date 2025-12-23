@@ -5,7 +5,7 @@ metadata:
   labels:
     app: kuber-dp
 spec:
-  replicas: 2
+  replicas: 5
   minReadySeconds: 10
   strategy:
     rollingUpdate:
@@ -22,6 +22,6 @@ spec:
     spec:
       containers:
       - name: kuber-app
-        image: roflmaoinmysoul/otus:v1.0
+        image: roflmaoinmysoul/otus:v2.0
         ports:
         - containerPort: 8000      
